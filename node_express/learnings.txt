@@ -1,0 +1,219 @@
+Requirements:
+
+1-Express is the npm framework for using server side node
+2-Chalk allows you to change the color of the terminal CLI for error handling, logging etc
+3-Debug allows us to to display to the cli without relying on console.log
+4-Path is a built in operator that allows you to join paths within the os system
+5-Morgan allows you to decide how you want to display messages when the server is running
+
+
+Steps:
+
+    1-First we declare an app 
+    2-var app = express();
+    3-This way we initialize the app that it will be run via express
+    4-We also have app.listen(3000) -> Allows you to listen to the port 3000 for server side code
+    5-Routing works via app.get('/') and then defining the function to render
+    6-res.sendFile(path.join(__dirname, 'views' , 'index.html')); This allows us to 
+    render our html file
+
+Adding Bootstrap:
+
+Within head
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+Within body
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+Adding jQuery:
+Within the body tag
+<script
+  src="http://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+
+Instead of adding them with their code
+We create public folder with css and js subdirectories
+
+Installing npm packages globally tends to backfire
+If we are in deployment and want to deploy on global servers, we cant ask our Heroku server to install eslint globally
+
+Thus we use scripts in package.json file
+
+This scripts files are run locally on your machine
+
+Nodemon reloads the app automatically
+It restarts the server for us
+
+To configure nodemon, add nodemon in package.json scripts, and add the following
+"nodemonConfig":{
+    "restartable": "rs",
+    "ignore": ["node_modules/**/node_modules"],
+    "delay": "2500"
+  }
+
+
+  To install templateEngines, we have option of Pug and EJS - EJS mirrors Angular and React
+
+  In Pug, we dont need to write html tags
+  We just provide the html and pug renders it automatically
+
+  in app.listen('/', (res, req) => {
+    res.render('index');
+  })
+
+#App.set is similar to template_folder where we keep our views
+#App.set('views') notifies the app where the views are located
+#App.set('view engine') -> allows us to start utilizing pug
+app.set('views', './src/views');
+app.set('view engine', 'pug');
+
+We can pass props to our index.pug similar to the way we pass it in React
+In res.render('index', { list: ['a', 'b'] });
+Here we are passing list of a and b
+
+  To get these values within our pug file
+  We can do 
+
+  ul
+    each val in list
+    li=val
+
+EJS:
+
+1-For EJS, we need to install ejs via npm
+2-app.set('view engine', 'ejs');
+3-ejs uses the <%= syntax
+4-Welcome to <%=title%> here title is the name of the props that was passed
+5-We can use JS within EJS
+
+        <%for(var i=0; i < list.length; i++){%>
+                        <li><%=list[i] %></li>
+                    <%}%>
+
+
+Templates:
+const bookRouter = express.Router();
+  Put all routes in one routing object
+
+  To add different routes within our application
+
+  bookRouter.route('/')
+  .get((req,res) => {
+    res.send('hello books');
+  });
+
+  bookRouter.route('/single')
+  .get((req,res) => {
+    res.send('hello single book');
+  });
+
+app.use('/books', bookRouter);
+
+Here we use the BookRouter which we have declared earlier
+Using that we can route it to different pages within the BookRouter.route method
+So when we are on /books then if we dont do anything the root is accessed
+If we do books/single then single route is accessed
+
+Same way in flask we use <int:var_id>
+In node we use bookRouter.route('/:id')
+
+const bookRouter = require('./src/routes/bookRoutes')(nav)
+This is to pass in some configuration data to bookRouter where it can access nav
+
+To use Microsoft SQL:
+  npm i mssql - this install the SQL file for us
+  const sql = require('mssql'); to access mssql
+  Create a config file via 
+
+  const config = {
+  user: 'library',
+  password: 'Books_123',
+  server: 'pslibrarysbajwa.database.windows.net', 
+  // You can use 'localhost\\instance' to connect to named instance
+  database: 'pslibrary',
+
+  options: {
+    encrypt: true
+  }
+};
+
+This will define our access to our MYSQL database
+to use it within our application
+#So we ask the sql library to use its connect method to connect to config that we have declared
+above. and catch an error if there is an error while trying to connect to the server and paste it in debug
+
+sql.connect(config).catch((err) => debug(err));
+  
+To use debug in different files, we need to go in scripts and at start mention DEBUG=app:*
+That way each time we require('debug')('nameoffile) in our apps, we can use it in different files
+
+Also, we need to make sure that we dont use console.log since that will be shown when we deploy it
+Rather using debug we can do the same thing only not showing it to the client side
+
+ We use ayncs to fetch information from the database
+
+  bookRouter.route('/')
+    .get((_req, res) => {
+      (async function query() {
+        const request = new sql.Request();
+        const result =  await request.query('select * from books;')
+        debug(result);
+        res.render(
+          'bookListView',
+          {
+            nav,
+            title: 'Library',
+            books_display: result.recordset
+          }
+        );
+      }());
+    });
+
+  We do the get request, and response. We make the get request with request and response
+  Request is the client side making a request.
+  Response is the server sending back a response
+
+  (async function <nameoffunction>(){
+    const request = new sql.Request();
+    const result = await request.query('select * from books;')
+    debug(result) to show in debug what the output is
+    response.render(
+      'nameofhtmlpagetorender',
+      {
+        //Information as prop passed to the html page
+        nav,
+        title: 'Library',
+        books_display = result.recordset -- return of the SQL query object
+        
+      }
+    )
+  })
+
+  The above is a async function
+  In async function we use ((){}()) syntax to generate them
+  We name it an async function
+  async function fetchBooks(){
+    const { recordset } = await request.query('sql_query')
+    We can also use the int variable for ids declared earlier to showcase the 
+    way to build sql statements with id
+
+    we use destructuring to request the req.parameters
+    In our case our parameter is :id
+    request.input creates an input file for us a name we can call our variable here we call it 'id'
+    we pass the type it is sql.int and it is the id that is being provided as the value for 'id'
+    then we can query it this way rather than adding text file after it
+    const { id } = req.params;
+        const request = new sql.Request();
+        const { recordset } = await request.input('id', sql.Int, id)
+          .query('select * from books where id = @id;');
+  }
+
+  Middle Ware:
+
+  
